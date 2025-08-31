@@ -1,5 +1,5 @@
 # Use the official Node.js runtime as the base image
-FROM node:20-alpine
+FROM node:20.18.1-alpine
 
 # Set the working directory in the container
 WORKDIR /app
@@ -16,7 +16,7 @@ COPY . .
 # Build the Next.js application
 RUN npm run build
 
-# Remove devDependencies to reduce image size
+# Remove devDependencies to reduce image size (after build is complete)
 RUN npm prune --production
 
 # Expose the port the app runs on
