@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# r34video React App
+
+A modern, dark-themed video browsing application built with Next.js 15 and React 19. Features a responsive grid layout, video streaming, search functionality, and tag-based filtering.
+
+## Features
+
+- 🎨 **Dark Theme** - Sleek, modern dark interface
+- 📱 **Responsive Design** - Works on all screen sizes
+- 🎥 **Video Streaming** - Built-in proxy for CORS handling
+- 🔍 **Search & Filters** - Tag-based search with URL persistence
+- 📄 **Pagination** - Next/Previous page navigation
+- 🏷️ **Clickable Tags** - Click tags to search related content
+- ⚡ **Quality Selection** - Multiple video quality options
+- 🖥️ **Modal View** - Full-screen video player with metadata
+
+## Tech Stack
+
+- **Framework:** Next.js 15 with Turbopack
+- **Frontend:** React 19, TypeScript
+- **Styling:** Tailwind CSS 4
+- **Data Fetching:** Axios with Cheerio for scraping
+- **Video Player:** HTML5 with streaming proxy
 
 ## Getting Started
 
-First, run the development server:
+### Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Deploy to Render
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Connect your GitHub repository to Render
+2. The `render.yaml` file will automatically configure the deployment
+3. Set any required environment variables
+4. Deploy!
 
-## Deploy on Vercel
+### Docker Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Build the image
+docker build -t r34video-react .
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Run the container
+docker run -p 3000:3000 r34video-react
+```
+
+### Manual Deployment
+
+1. Build the application:
+   ```bash
+   npm ci
+   npm run build
+   ```
+
+2. Start the production server:
+   ```bash
+   npm start
+   ```
+
+## Configuration
+
+The app uses the following environment variables:
+
+- `NODE_ENV` - Set to "production" for production builds
+- `PORT` - Server port (default: 3000)
+
+## API Endpoints
+
+- `/api/videos?page=1&q=search` - Fetch videos with pagination and search
+- `/api/resolve?url=video_url` - Get video streams and metadata
+- `/api/stream?url=stream_url` - Proxy video streams for CORS
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/           # API routes
+│   ├── globals.css    # Global styles
+│   ├── layout.tsx     # Root layout
+│   └── page.tsx       # Home page
+├── components/
+│   ├── Feed.tsx       # Main video grid
+│   ├── VideoCard.tsx  # Video thumbnail cards
+│   ├── VideoModal.tsx # Video player modal
+│   └── Header.tsx     # Navigation header
+└── contexts/
+    └── SearchContext.tsx # Search state management
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
