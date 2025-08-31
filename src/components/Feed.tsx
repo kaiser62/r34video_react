@@ -1,0 +1,148 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearch } from "@/contexts/SearchContext";
+import VideoCard from "./VideoCard";
+import VideoModal from "./VideoModal";
+
+interface Video {
+  id: string;
+  title: string;
+  thumbnail: string;
+  link: string;
+  is_hd: string;
+  duration: string;
+  tags: string[];
+}
+
+export default function Feed() {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const { searchQuery } = useSearch();
+  const requestInProgress = useRef(false);
+  const lastFetchedParams = useRef<{ page: number; query: string } | null>(null);
+
+  const fetchVideos = useCallback(async (pageNumber: number) => {
+    // Check if we've already fetched this exact combination
+    if (lastFetchedParams.current?.page === pageNumber && 
+        lastFetchedParams.current?.query === searchQuery) {
+      return;
+    }
+
+    if (requestInProgress.current) {
+      return;
+    }
+    
+    requestInProgress.current = true;
+    setLoading(true);
+    
+    try {
+      const url = searchQuery
+        ? `/api/videos?q=${searchQuery}&page=${pageNumber}`
+        : `/api/videos?page=${pageNumber}`;
+      
+      const res = await fetch(url);
+      const newVideos: Video[] = await res.json();
+      
+      setVideos(newVideos);
+      setHasNextPage(newVideos.length >= 24);
+      
+      // Store the parameters we just fetched
+      lastFetchedParams.current = { page: pageNumber, query: searchQuery };
+    } catch (error) {
+      console.error("Failed to fetch videos:", error);
+      setVideos([]);
+    } finally {
+      setLoading(false);
+      requestInProgress.current = false;
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setVideos([]);
+    setHasNextPage(true);
+    // Reset the last fetched params when search query changes
+    lastFetchedParams.current = null;
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchVideos(currentPage);
+  }, [currentPage, fetchVideos]);
+
+  const handleNextPage = () => {
+    if (!loading && hasNextPage) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (!loading && currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleVideoClick = (video: Video) => {
+    setSelectedVideo(video);
+  };
+
+  const closeModal = () => {
+    setSelectedVideo(null);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {videos.map((video) => (
+          <VideoCard 
+            key={video.id} 
+            video={video} 
+            onClick={() => handleVideoClick(video)}
+          />
+        ))}
+      </div>
+      
+      {loading && (
+        <div className="flex justify-center my-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center space-x-4 my-8">
+        <button
+          onClick={handlePrevPage}
+          disabled={loading || currentPage === 1}
+          className="px-6 py-3 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors border border-gray-600"
+        >
+          Previous
+        </button>
+        
+        <span className="text-gray-300 font-medium">
+          Page {currentPage}
+        </span>
+        
+        <button
+          onClick={handleNextPage}
+          disabled={loading || !hasNextPage}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+        >
+          Next
+        </button>
+      </div>
+      
+      {!hasNextPage && videos.length > 0 && currentPage > 1 && (
+        <div className="text-center text-gray-400 text-sm mb-4">
+          No more pages available
+        </div>
+      )}
+
+      {selectedVideo && (
+        <VideoModal video={selectedVideo} onClose={closeModal} />
+      )}
+    </div>
+  );
+}

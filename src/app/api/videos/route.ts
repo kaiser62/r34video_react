@@ -1,0 +1,88 @@
+import { NextResponse } from "next/server";
+import axios from "axios";
+import * as cheerio from "cheerio";
+
+const BASE_URL = "https://rule34video.com";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = searchParams.get("page") || "1";
+  const query = searchParams.get("q");
+
+  let url;
+  if (query) {
+    const formattedQuery = query.replace(/ /g, "-");
+    url = `${BASE_URL}/search/${formattedQuery}?sort_by=post_date;from:${page}`;
+  } else {
+    url = `${BASE_URL}/latest-updates/${page}/`;
+  }
+
+  console.log("Fetching videos from:", url);
+
+  try {
+    const { data } = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      },
+    });
+
+    const $ = cheerio.load(data);
+    const videos: {
+      id: string;
+      link: string;
+      thumbnail: string;
+      title: string;
+      is_hd: string;
+      duration: string;
+      tags: string[];
+    }[] = [];
+
+    $("div.item.thumb").each((i, item) => {
+      const linkTag = $(item).find('a.js-open-popup[href*="/video/"]');
+      if (!linkTag.length) return;
+
+      const href = linkTag.attr("href") || "";
+      const fullLink = new URL(href, BASE_URL).toString();
+      const title = linkTag.attr("title") || "";
+      const videoId = href.split("/").filter(Boolean).slice(-2, -1)[0];
+
+      const thumbnailTag = $(item).find("img.thumb.lazy-load");
+      let thumbnail = thumbnailTag.attr("data-original") || "";
+      if (!thumbnail && thumbnailTag.length) {
+        thumbnail = thumbnailTag.attr("src") || thumbnailTag.attr("data-src") || "";
+      }
+      if (!thumbnail) {
+        const altThumbnail = $(item).find("img");
+        if (altThumbnail.length) {
+          thumbnail = altThumbnail.attr("src") || altThumbnail.attr("data-src") || altThumbnail.attr("data-original") || "";
+        }
+      }
+
+      const duration = $(item).find(".time").text().trim();
+      const isHd = $(item).find(".quality").length > 0 ? "HD" : "";
+      
+      // Tags are not available in the listing, will be fetched when video is opened
+
+      const videoData = {
+        id: videoId,
+        link: fullLink,
+        thumbnail,
+        title,
+        is_hd: isHd,
+        duration,
+        tags: [],
+      };
+
+      videos.push(videoData);
+    });
+
+    return NextResponse.json(videos);
+  } catch (error) {
+    console.error("Failed to fetch videos:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch videos" },
+      { status: 500 }
+    );
+  }
+}
