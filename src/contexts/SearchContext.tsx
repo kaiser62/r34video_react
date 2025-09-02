@@ -38,13 +38,17 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     }
     
     const newURL = params.toString() ? `/?${params.toString()}` : '/';
+    console.log(`🔗 Updating URL to: ${newURL}`);
     router.replace(newURL);
   };
 
-  // Update search query and URL
+  // Update search query and URL (only reset to page 1 for new searches)
   const setSearchQuery = (query: string) => {
+    const isNewSearch = query !== searchQuery;
     setSearchQueryState(query);
-    updateURL(1, query); // Always reset to page 1 when searching
+    if (isNewSearch) {
+      updateURL(1, query); // Reset to page 1 only for new searches
+    }
   };
 
   return (

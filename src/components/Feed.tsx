@@ -47,11 +47,13 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
     
     try {
       const url = searchQuery
-        ? `/api/videos?q=${searchQuery}&page=${pageNumber}`
+        ? `/api/videos?q=${encodeURIComponent(searchQuery)}&page=${pageNumber}`
         : `/api/videos?page=${pageNumber}`;
       
+      console.log(`🔍 Fetching videos: ${url}`);
       const res = await fetch(url);
       const newVideos: Video[] = await res.json();
+      console.log(`📊 Retrieved ${newVideos.length} videos for page ${pageNumber}`);
       
       setVideos(newVideos);
       setHasNextPage(newVideos.length >= 24);
@@ -79,21 +81,27 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
+  // Track search query changes separately from page changes
+  const prevSearchQuery = useRef(searchQuery);
   useEffect(() => {
-    setCurrentPage(1);
-    setVideos([]);
-    setHasNextPage(true);
-    // Reset the last fetched params when search query changes
-    lastFetchedParams.current = null;
+    // Only reset page to 1 when search query actually changes (not during initialization)
+    if (initialized.current && prevSearchQuery.current !== searchQuery) {
+      setCurrentPage(1);
+      setVideos([]);
+      setHasNextPage(true);
+      lastFetchedParams.current = null;
+    }
+    prevSearchQuery.current = searchQuery;
   }, [searchQuery]);
 
+  // Handle fetching and URL updates
   useEffect(() => {
     fetchVideos(currentPage);
-    // Update URL when page changes (but not during initial load)
-    if (initialized.current && (lastFetchedParams.current !== null || currentPage !== initialPage)) {
+    // Update URL when page changes (but not during initial load from URL)
+    if (initialized.current) {
       updateURL(currentPage, searchQuery);
     }
-  }, [currentPage, fetchVideos, updateURL, searchQuery, initialPage]);
+  }, [currentPage, fetchVideos, updateURL, searchQuery]);
 
   const handleNextPage = () => {
     if (!loading && hasNextPage) {
