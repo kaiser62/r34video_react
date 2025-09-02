@@ -38,16 +38,26 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     }
     
     const newURL = params.toString() ? `/?${params.toString()}` : '/';
-    console.log(`🔗 Updating URL to: ${newURL}`);
-    router.replace(newURL);
+    console.log(`🔗 Navigating to: ${newURL}`);
+    router.push(newURL); // Use push instead of replace for proper navigation
   };
 
   // Update search query and URL (only reset to page 1 for new searches)
   const setSearchQuery = (query: string) => {
-    const isNewSearch = query !== searchQuery;
+    console.log(`🔍 setSearchQuery called with: "${query}", current: "${searchQuery}"`);
+    const isNewSearch = query.trim() !== searchQuery.trim();
     setSearchQueryState(query);
+    
     if (isNewSearch) {
-      updateURL(1, query); // Reset to page 1 only for new searches
+      console.log(`🔄 New search detected, navigating to page 1`);
+      // Use router.push for new searches to trigger navigation
+      const params = new URLSearchParams();
+      params.set('page', '1');
+      if (query.trim()) {
+        params.set('q', query.trim());
+      }
+      const newURL = params.toString() ? `/?${params.toString()}` : '/';
+      router.push(newURL);
     }
   };
 

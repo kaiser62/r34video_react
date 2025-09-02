@@ -31,14 +31,18 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
   const lastFetchedParams = useRef<{ page: number; query: string } | null>(null);
   const initialized = useRef(false);
 
-  const fetchVideos = useCallback(async (pageNumber: number) => {
+  const fetchVideos = useCallback(async (pageNumber: number, queryParam?: string) => {
+    const currentQuery = queryParam !== undefined ? queryParam : searchQuery;
+    
     // Check if we've already fetched this exact combination
     if (lastFetchedParams.current?.page === pageNumber && 
-        lastFetchedParams.current?.query === searchQuery) {
+        lastFetchedParams.current?.query === currentQuery) {
+      console.log(`⏭️ Skipping fetch - already have page ${pageNumber} for query "${currentQuery}"`);
       return;
     }
 
     if (requestInProgress.current) {
+      console.log(`⏳ Request already in progress, skipping`);
       return;
     }
     
@@ -46,20 +50,20 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
     setLoading(true);
     
     try {
-      const url = searchQuery
-        ? `/api/videos?q=${encodeURIComponent(searchQuery)}&page=${pageNumber}`
+      const url = currentQuery
+        ? `/api/videos?q=${encodeURIComponent(currentQuery)}&page=${pageNumber}`
         : `/api/videos?page=${pageNumber}`;
       
       console.log(`🔍 Fetching videos: ${url}`);
       const res = await fetch(url);
       const newVideos: Video[] = await res.json();
-      console.log(`📊 Retrieved ${newVideos.length} videos for page ${pageNumber}`);
+      console.log(`📊 Retrieved ${newVideos.length} videos for page ${pageNumber}, query: "${currentQuery}"`);
       
       setVideos(newVideos);
       setHasNextPage(newVideos.length >= 24);
       
       // Store the parameters we just fetched
-      lastFetchedParams.current = { page: pageNumber, query: searchQuery };
+      lastFetchedParams.current = { page: pageNumber, query: currentQuery };
     } catch (error) {
       console.error("Failed to fetch videos:", error);
       setVideos([]);
@@ -67,53 +71,52 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [searchQuery]);
+  }, [searchQuery]); // Include searchQuery dependency
 
-  // Initialize from URL parameters (only once on mount)
+  // React to initial props changes (URL-driven)
   useEffect(() => {
+    console.log(`🔄 Props changed - initialPage: ${initialPage}, initialQuery: "${initialQuery}"`);
+    
+    // Update search query from URL
     if (initialQuery !== undefined && initialQuery !== searchQuery) {
+      console.log(`📝 Setting search query from URL: "${initialQuery}"`);
       setSearchQuery(initialQuery);
     }
+    
+    // Update page from URL
     if (initialPage !== currentPage) {
+      console.log(`📄 Setting page from URL: ${initialPage}`);
       setCurrentPage(initialPage);
     }
+    
+    // Clear previous results when props change
+    setVideos([]);
+    setHasNextPage(true);
+    lastFetchedParams.current = null;
+    
+    // Fetch data with new params
+    fetchVideos(initialPage, initialQuery);
+    
     initialized.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, [initialPage, initialQuery, currentPage, searchQuery, setSearchQuery, fetchVideos]);
 
-  // Track search query changes separately from page changes
-  const prevSearchQuery = useRef(searchQuery);
-  useEffect(() => {
-    // Only reset page to 1 when search query actually changes (not during initialization)
-    if (initialized.current && prevSearchQuery.current !== searchQuery) {
-      setCurrentPage(1);
-      setVideos([]);
-      setHasNextPage(true);
-      lastFetchedParams.current = null;
-    }
-    prevSearchQuery.current = searchQuery;
-  }, [searchQuery]);
-
-  // Handle fetching and URL updates
-  useEffect(() => {
-    fetchVideos(currentPage);
-    // Update URL when page changes (but not during initial load from URL)
-    if (initialized.current) {
-      updateURL(currentPage, searchQuery);
-    }
-  }, [currentPage, fetchVideos, updateURL, searchQuery]);
-
+  // Handle pagination button clicks (update URL, which will trigger re-render)
   const handleNextPage = () => {
     if (!loading && hasNextPage) {
-      setCurrentPage((prev) => prev + 1);
+      const nextPage = currentPage + 1;
+      console.log(`➡️ Next page clicked: ${nextPage}`);
+      updateURL(nextPage, searchQuery);
     }
   };
 
   const handlePrevPage = () => {
     if (!loading && currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
+      const prevPage = currentPage - 1;  
+      console.log(`⬅️ Previous page clicked: ${prevPage}`);
+      updateURL(prevPage, searchQuery);
     }
   };
+
 
   const handleVideoClick = (video: Video) => {
     setSelectedVideo(video);
