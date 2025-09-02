@@ -25,10 +25,10 @@ export async function GET(request: Request) {
 
   let url;
   if (query) {
-    // Use the search URL format from the Flask app
+    // Use the search URL format from the Flask app (confirmed working)
     const formattedQuery = query.replace(/\s+/g, "-");
     url = `${BASE_URL}/search/${formattedQuery}?sort_by=post_date;from:${page}`;
-    console.log("🔧 Using search URL format");
+    console.log("🔧 Using Flask app search format");
   } else {
     url = `${BASE_URL}/latest-updates/${page}/`;
   }
