@@ -37,8 +37,8 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
       
       try {
         const url = initialQuery
-          ? `/api/videos?q=${encodeURIComponent(initialQuery)}&page=${initialPage}`
-          : `/api/videos?page=${initialPage}`;
+          ? `/api/flask/videos?q=${encodeURIComponent(initialQuery)}&page=${initialPage}`
+          : `/api/flask/videos?page=${initialPage}`;
         
         console.log(`🔍 Fetching: ${url}`);
         const res = await fetch(url);

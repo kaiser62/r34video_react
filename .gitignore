@@ -41,4 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 # flask app source (not needed for React version)
-flask_app_source/
+
