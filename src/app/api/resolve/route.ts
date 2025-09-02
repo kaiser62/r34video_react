@@ -3,6 +3,9 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import he from "he";
 
+const REQUEST_TIMEOUT = 25000; // 25 seconds for Vercel
+export const maxDuration = 30; // Vercel function timeout
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const videoUrl = searchParams.get("url");
@@ -22,6 +25,8 @@ export async function GET(request: Request) {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       },
+      timeout: REQUEST_TIMEOUT,
+      maxRedirects: 5,
     });
 
     console.log("Fetched HTML page of length:", html_page.length);
@@ -86,7 +91,15 @@ export async function GET(request: Request) {
     };
 
     console.log("Resolved video data:", resolvedData);
-    return NextResponse.json(resolvedData);
+    
+    const response = NextResponse.json(resolvedData);
+    
+    // Add caching headers for Vercel
+    response.headers.set('Cache-Control', 'public, max-age=600, s-maxage=1200');
+    response.headers.set('CDN-Cache-Control', 'public, max-age=1200');
+    response.headers.set('Vercel-CDN-Cache-Control', 'public, max-age=1200');
+    
+    return response;
   } catch (error) {
     console.error("Failed to resolve video:", error);
     return NextResponse.json(

@@ -15,15 +15,21 @@ interface Video {
   tags: string[];
 }
 
-export default function Feed() {
+interface FeedProps {
+  initialPage?: number;
+  initialQuery?: string;
+}
+
+export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [loading, setLoading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const { searchQuery } = useSearch();
+  const { searchQuery, setSearchQuery, updateURL } = useSearch();
   const requestInProgress = useRef(false);
   const lastFetchedParams = useRef<{ page: number; query: string } | null>(null);
+  const initialized = useRef(false);
 
   const fetchVideos = useCallback(async (pageNumber: number) => {
     // Check if we've already fetched this exact combination
@@ -61,6 +67,18 @@ export default function Feed() {
     }
   }, [searchQuery]);
 
+  // Initialize from URL parameters (only once on mount)
+  useEffect(() => {
+    if (initialQuery !== undefined && initialQuery !== searchQuery) {
+      setSearchQuery(initialQuery);
+    }
+    if (initialPage !== currentPage) {
+      setCurrentPage(initialPage);
+    }
+    initialized.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
   useEffect(() => {
     setCurrentPage(1);
     setVideos([]);
@@ -71,7 +89,11 @@ export default function Feed() {
 
   useEffect(() => {
     fetchVideos(currentPage);
-  }, [currentPage, fetchVideos]);
+    // Update URL when page changes (but not during initial load)
+    if (initialized.current && (lastFetchedParams.current !== null || currentPage !== initialPage)) {
+      updateURL(currentPage, searchQuery);
+    }
+  }, [currentPage, fetchVideos, updateURL, searchQuery, initialPage]);
 
   const handleNextPage = () => {
     if (!loading && hasNextPage) {
@@ -116,21 +138,36 @@ export default function Feed() {
         <button
           onClick={handlePrevPage}
           disabled={loading || currentPage === 1}
-          className="px-6 py-3 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors border border-gray-600"
+          className="px-6 py-3 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors border border-gray-600 flex items-center gap-2"
         >
+          {loading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+          ) : (
+            "←"
+          )}
           Previous
         </button>
         
-        <span className="text-gray-300 font-medium">
+        <span className="text-gray-300 font-medium px-4">
           Page {currentPage}
+          {searchQuery && (
+            <span className="text-gray-500 text-sm block">
+              Search: &ldquo;{searchQuery}&rdquo;
+            </span>
+          )}
         </span>
         
         <button
           onClick={handleNextPage}
           disabled={loading || !hasNextPage}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
           Next
+          {loading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          ) : (
+            "→"
+          )}
         </button>
       </div>
       

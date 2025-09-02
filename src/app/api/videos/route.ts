@@ -3,6 +3,9 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 
 const BASE_URL = "https://rule34video.com";
+const REQUEST_TIMEOUT = 25000; // 25 seconds for Vercel
+
+export const maxDuration = 30; // Vercel function timeout
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -25,6 +28,8 @@ export async function GET(request: Request) {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       },
+      timeout: REQUEST_TIMEOUT,
+      maxRedirects: 5,
     });
 
     const $ = cheerio.load(data);
@@ -77,7 +82,14 @@ export async function GET(request: Request) {
       videos.push(videoData);
     });
 
-    return NextResponse.json(videos);
+    const response = NextResponse.json(videos);
+    
+    // Add caching headers for Vercel
+    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+    response.headers.set('CDN-Cache-Control', 'public, max-age=600');
+    response.headers.set('Vercel-CDN-Cache-Control', 'public, max-age=600');
+    
+    return response;
   } catch (error) {
     console.error("Failed to fetch videos:", error);
     return NextResponse.json(

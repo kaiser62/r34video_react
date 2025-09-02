@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
+const REQUEST_TIMEOUT = 25000; // 25 seconds for Vercel
+export const maxDuration = 30; // Vercel function timeout
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const videoUrl = searchParams.get("url");
@@ -22,6 +25,8 @@ export async function GET(request: NextRequest) {
         Referer: "https://rule34video.com/",
         Range: range || "bytes=0-",
       },
+      timeout: REQUEST_TIMEOUT,
+      maxRedirects: 5,
     });
 
     const headers = new Headers();
