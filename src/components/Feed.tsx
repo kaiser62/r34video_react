@@ -94,18 +94,26 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
 
   // Handle pagination button clicks (update URL, which will trigger re-render)
   const handleNextPage = () => {
+    console.log(`🖱️ Next button clicked - loading: ${loading}, hasNextPage: ${hasNextPage}`);
     if (!loading && hasNextPage) {
       const nextPage = currentPage + 1;
-      console.log(`➡️ Next page clicked: ${nextPage}, query: "${initialQuery}"`);
+      console.log(`➡️ Next page: ${nextPage}, query: "${initialQuery}"`);
+      console.log(`📞 About to call updateURL(${nextPage}, "${initialQuery}")`);
       updateURL(nextPage, initialQuery);
+    } else {
+      console.log(`🚫 Next page blocked - loading: ${loading}, hasNextPage: ${hasNextPage}`);
     }
   };
 
   const handlePrevPage = () => {
+    console.log(`🖱️ Prev button clicked - loading: ${loading}, currentPage: ${currentPage}`);
     if (!loading && currentPage > 1) {
       const prevPage = currentPage - 1;  
-      console.log(`⬅️ Previous page clicked: ${prevPage}, query: "${initialQuery}"`);
+      console.log(`⬅️ Previous page: ${prevPage}, query: "${initialQuery}"`);
+      console.log(`📞 About to call updateURL(${prevPage}, "${initialQuery}")`);
       updateURL(prevPage, initialQuery);
+    } else {
+      console.log(`🚫 Prev page blocked - loading: ${loading}, currentPage: ${currentPage}`);
     }
   };
 
