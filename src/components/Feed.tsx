@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearch } from "@/contexts/SearchContext";
 import VideoCard from "./VideoCard";
 import VideoModal from "./VideoModal";
@@ -22,98 +22,62 @@ interface FeedProps {
 
 export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [hasNextPage, setHasNextPage] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const { updateURL } = useSearch();
-  const requestInProgress = useRef(false);
-  const lastFetchedParams = useRef<{ page: number; query: string } | null>(null);
-  const initialized = useRef(false);
 
-  const fetchVideos = useCallback(async (pageNumber: number, queryParam?: string) => {
-    const currentQuery = queryParam || "";
-    
-    // Check if we've already fetched this exact combination
-    if (lastFetchedParams.current?.page === pageNumber && 
-        lastFetchedParams.current?.query === currentQuery) {
-      console.log(`⏭️ Skipping fetch - already have page ${pageNumber} for query "${currentQuery}"`);
-      return;
-    }
-
-    if (requestInProgress.current) {
-      console.log(`⏳ Request already in progress, skipping`);
-      return;
-    }
-    
-    requestInProgress.current = true;
-    setLoading(true);
-    
-    try {
-      const url = currentQuery
-        ? `/api/videos?q=${encodeURIComponent(currentQuery)}&page=${pageNumber}`
-        : `/api/videos?page=${pageNumber}`;
-      
-      console.log(`🔍 Fetching videos: ${url}`);
-      const res = await fetch(url);
-      const newVideos: Video[] = await res.json();
-      console.log(`📊 Retrieved ${newVideos.length} videos for page ${pageNumber}, query: "${currentQuery}"`);
-      
-      setVideos(newVideos);
-      setHasNextPage(newVideos.length >= 24);
-      
-      // Store the parameters we just fetched
-      lastFetchedParams.current = { page: pageNumber, query: currentQuery };
-    } catch (error) {
-      console.error("Failed to fetch videos:", error);
-      setVideos([]);
-    } finally {
-      setLoading(false);
-      requestInProgress.current = false;
-    }
-  }, []); // No dependencies - use query parameter directly
-
-  // React to prop changes (URL-driven) - runs on every mount/remount due to key
+  // Direct fetch on mount/remount - much simpler like Flask
   useEffect(() => {
-    console.log(`🔄 Feed mounted/remounted with - initialPage: ${initialPage}, initialQuery: "${initialQuery}"`);
+    console.log(`🎬 Feed loading page ${initialPage}, query: "${initialQuery}"`);
     
-    // Set state directly from props (no SearchContext interference)
-    setCurrentPage(initialPage);
+    const fetchData = async () => {
+      setLoading(true);
+      setVideos([]); // Clear previous videos immediately
+      
+      try {
+        const currentQuery = initialQuery || "";
+        const url = currentQuery
+          ? `/api/videos?q=${encodeURIComponent(currentQuery)}&page=${initialPage}`
+          : `/api/videos?page=${initialPage}`;
+        
+        console.log(`🔍 Fetching: ${url}`);
+        const res = await fetch(url);
+        const newVideos: Video[] = await res.json();
+        
+        console.log(`📊 API returned ${newVideos.length} videos`);
+        console.log(`📝 First video: ${newVideos[0]?.id} - ${newVideos[0]?.title?.substring(0, 30)}...`);
+        
+        // Force new array reference to trigger re-render
+        setVideos([...newVideos]);
+        setHasNextPage(newVideos.length >= 24);
+        
+      } catch (error) {
+        console.error("❌ Fetch failed:", error);
+        setVideos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Clear previous results 
-    setVideos([]);
-    setHasNextPage(true);
-    lastFetchedParams.current = null;
-    
-    // Fetch data immediately with the props (bypassing SearchContext)
-    console.log(`🚀 Fetching data for page ${initialPage}, query: "${initialQuery}"`);
-    fetchVideos(initialPage, initialQuery);
-    
-    initialized.current = true;
-  }, [initialPage, initialQuery, fetchVideos]);
+    fetchData();
+  }, [initialPage, initialQuery]);
 
-  // Handle pagination button clicks (update URL, which will trigger re-render)
+
+  // Simple pagination handlers - like Flask
   const handleNextPage = () => {
-    console.log(`🖱️ Next button clicked - loading: ${loading}, hasNextPage: ${hasNextPage}`);
     if (!loading && hasNextPage) {
-      const nextPage = currentPage + 1;
-      console.log(`➡️ Next page: ${nextPage}, query: "${initialQuery}"`);
-      console.log(`📞 About to call updateURL(${nextPage}, "${initialQuery}")`);
+      const nextPage = initialPage + 1;
+      console.log(`➡️ Going to page ${nextPage}`);
       updateURL(nextPage, initialQuery);
-    } else {
-      console.log(`🚫 Next page blocked - loading: ${loading}, hasNextPage: ${hasNextPage}`);
     }
   };
 
   const handlePrevPage = () => {
-    console.log(`🖱️ Prev button clicked - loading: ${loading}, currentPage: ${currentPage}`);
-    if (!loading && currentPage > 1) {
-      const prevPage = currentPage - 1;  
-      console.log(`⬅️ Previous page: ${prevPage}, query: "${initialQuery}"`);
-      console.log(`📞 About to call updateURL(${prevPage}, "${initialQuery}")`);
+    if (!loading && initialPage > 1) {
+      const prevPage = initialPage - 1;
+      console.log(`⬅️ Going to page ${prevPage}`);
       updateURL(prevPage, initialQuery);
-    } else {
-      console.log(`🚫 Prev page blocked - loading: ${loading}, currentPage: ${currentPage}`);
     }
   };
 
@@ -148,7 +112,7 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
       <div className="flex justify-center items-center space-x-4 my-8">
         <button
           onClick={handlePrevPage}
-          disabled={loading || currentPage === 1}
+          disabled={loading || initialPage === 1}
           className="px-6 py-3 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors border border-gray-600 flex items-center gap-2"
         >
           {loading ? (
@@ -160,7 +124,7 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
         </button>
         
         <span className="text-gray-300 font-medium px-4">
-          Page {currentPage}
+          Page {initialPage}
           {initialQuery && (
             <span className="text-gray-500 text-sm block">
               Search: &ldquo;{initialQuery}&rdquo;
@@ -182,7 +146,7 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
         </button>
       </div>
       
-      {!hasNextPage && videos.length > 0 && currentPage > 1 && (
+      {!hasNextPage && videos.length > 0 && initialPage > 1 && (
         <div className="text-center text-gray-400 text-sm mb-4">
           No more pages available
         </div>
