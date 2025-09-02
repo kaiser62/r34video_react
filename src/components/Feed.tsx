@@ -29,16 +29,15 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
 
   // Direct fetch on mount/remount - much simpler like Flask
   useEffect(() => {
-    console.log(`🎬 Feed loading page ${initialPage}, query: "${initialQuery}"`);
+    console.log(`🎬 Feed loading page ${initialPage}, query:`, initialQuery);
     
     const fetchData = async () => {
       setLoading(true);
       setVideos([]); // Clear previous videos immediately
       
       try {
-        const currentQuery = initialQuery || "";
-        const url = currentQuery
-          ? `/api/videos?q=${encodeURIComponent(currentQuery)}&page=${initialPage}`
+        const url = initialQuery
+          ? `/api/videos?q=${encodeURIComponent(initialQuery)}&page=${initialPage}`
           : `/api/videos?page=${initialPage}`;
         
         console.log(`🔍 Fetching: ${url}`);

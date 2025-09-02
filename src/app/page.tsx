@@ -8,7 +8,7 @@ interface HomeProps {
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const page = typeof params.page === 'string' ? parseInt(params.page, 10) : 1;
-  const query = typeof params.q === 'string' ? params.q : undefined;
+  const query = typeof params.q === 'string' && params.q !== '' ? params.q : undefined;
 
   console.log('🏠 Page component rendered with:', { page, query, params });
 
