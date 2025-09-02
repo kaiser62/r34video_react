@@ -7,6 +7,17 @@ const REQUEST_TIMEOUT = 25000; // 25 seconds for Vercel
 
 export const maxDuration = 30; // Vercel function timeout
 
+export async function OPTIONS(request: Request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = searchParams.get("page") || "1";
@@ -96,6 +107,11 @@ export async function GET(request: Request) {
     console.log(`📊 API Response - Found ${videos.length} videos for page ${page}, query: "${query}"`);
     const response = NextResponse.json(videos);
     
+    // Add CORS headers
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    
     // Add caching headers for Vercel
     response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=600');
     response.headers.set('CDN-Cache-Control', 'public, max-age=600');
@@ -104,9 +120,16 @@ export async function GET(request: Request) {
     return response;
   } catch (error) {
     console.error("Failed to fetch videos:", error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: "Failed to fetch videos" },
       { status: 500 }
     );
+    
+    // Add CORS headers to error response
+    errorResponse.headers.set("Access-Control-Allow-Origin", "*");
+    errorResponse.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    errorResponse.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    
+    return errorResponse;
   }
 }
