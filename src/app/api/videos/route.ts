@@ -14,8 +14,10 @@ export async function GET(request: Request) {
 
   let url;
   if (query) {
-    const formattedQuery = query.replace(/ /g, "-");
+    // Use the search URL format from the Flask app
+    const formattedQuery = query.replace(/\s+/g, "-");
     url = `${BASE_URL}/search/${formattedQuery}?sort_by=post_date;from:${page}`;
+    console.log("🔧 Using search URL format");
   } else {
     url = `${BASE_URL}/latest-updates/${page}/`;
   }
@@ -24,11 +26,19 @@ export async function GET(request: Request) {
   console.log("🔗 Fetching videos from:", url);
 
   try {
+    const headers: Record<string, string> = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
+      "Referer": BASE_URL,
+    };
+
     const { data } = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      },
+      headers,
       timeout: REQUEST_TIMEOUT,
       maxRedirects: 5,
     });
