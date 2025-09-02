@@ -26,13 +26,13 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
   const [loading, setLoading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const { searchQuery, setSearchQuery, updateURL } = useSearch();
+  const { updateURL } = useSearch();
   const requestInProgress = useRef(false);
   const lastFetchedParams = useRef<{ page: number; query: string } | null>(null);
   const initialized = useRef(false);
 
   const fetchVideos = useCallback(async (pageNumber: number, queryParam?: string) => {
-    const currentQuery = queryParam !== undefined ? queryParam : searchQuery;
+    const currentQuery = queryParam || "";
     
     // Check if we've already fetched this exact combination
     if (lastFetchedParams.current?.page === pageNumber && 
@@ -71,44 +71,41 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [searchQuery]); // Include searchQuery dependency
+  }, []); // No dependencies - use query parameter directly
 
   // React to prop changes (URL-driven) - runs on every mount/remount due to key
   useEffect(() => {
     console.log(`🔄 Feed mounted/remounted with - initialPage: ${initialPage}, initialQuery: "${initialQuery}"`);
     
-    // Set state directly from props
+    // Set state directly from props (no SearchContext interference)
     setCurrentPage(initialPage);
-    if (initialQuery !== undefined) {
-      setSearchQuery(initialQuery);
-    }
     
     // Clear previous results 
     setVideos([]);
     setHasNextPage(true);
     lastFetchedParams.current = null;
     
-    // Fetch data immediately with the props
+    // Fetch data immediately with the props (bypassing SearchContext)
     console.log(`🚀 Fetching data for page ${initialPage}, query: "${initialQuery}"`);
     fetchVideos(initialPage, initialQuery);
     
     initialized.current = true;
-  }, [initialPage, initialQuery, setSearchQuery, fetchVideos]);
+  }, [initialPage, initialQuery, fetchVideos]);
 
   // Handle pagination button clicks (update URL, which will trigger re-render)
   const handleNextPage = () => {
     if (!loading && hasNextPage) {
       const nextPage = currentPage + 1;
-      console.log(`➡️ Next page clicked: ${nextPage}`);
-      updateURL(nextPage, searchQuery);
+      console.log(`➡️ Next page clicked: ${nextPage}, query: "${initialQuery}"`);
+      updateURL(nextPage, initialQuery);
     }
   };
 
   const handlePrevPage = () => {
     if (!loading && currentPage > 1) {
       const prevPage = currentPage - 1;  
-      console.log(`⬅️ Previous page clicked: ${prevPage}`);
-      updateURL(prevPage, searchQuery);
+      console.log(`⬅️ Previous page clicked: ${prevPage}, query: "${initialQuery}"`);
+      updateURL(prevPage, initialQuery);
     }
   };
 
@@ -156,9 +153,9 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
         
         <span className="text-gray-300 font-medium px-4">
           Page {currentPage}
-          {searchQuery && (
+          {initialQuery && (
             <span className="text-gray-500 text-sm block">
-              Search: &ldquo;{searchQuery}&rdquo;
+              Search: &ldquo;{initialQuery}&rdquo;
             </span>
           )}
         </span>
