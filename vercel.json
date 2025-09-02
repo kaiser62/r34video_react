@@ -1,9 +1,6 @@
 {
   "builds": [
-    {
-      "src": "next.config.ts",
-      "use": "@vercel/next"
-    },
+    
     {
       "src": "flask_app_source/app.py",
       "use": "@vercel/python",
