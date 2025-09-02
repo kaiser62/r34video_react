@@ -20,7 +20,8 @@ export async function GET(request: Request) {
     url = `${BASE_URL}/latest-updates/${page}/`;
   }
 
-  console.log("Fetching videos from:", url);
+  console.log("📡 API Request - Page:", page, "Query:", query);
+  console.log("🔗 Fetching videos from:", url);
 
   try {
     const { data } = await axios.get(url, {
@@ -82,6 +83,7 @@ export async function GET(request: Request) {
       videos.push(videoData);
     });
 
+    console.log(`📊 API Response - Found ${videos.length} videos for page ${page}, query: "${query}"`);
     const response = NextResponse.json(videos);
     
     // Add caching headers for Vercel

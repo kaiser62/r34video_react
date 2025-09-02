@@ -73,32 +73,27 @@ export default function Feed({ initialPage = 1, initialQuery }: FeedProps) {
     }
   }, [searchQuery]); // Include searchQuery dependency
 
-  // React to initial props changes (URL-driven)
+  // React to prop changes (URL-driven) - runs on every mount/remount due to key
   useEffect(() => {
-    console.log(`🔄 Props changed - initialPage: ${initialPage}, initialQuery: "${initialQuery}"`);
+    console.log(`🔄 Feed mounted/remounted with - initialPage: ${initialPage}, initialQuery: "${initialQuery}"`);
     
-    // Update search query from URL
-    if (initialQuery !== undefined && initialQuery !== searchQuery) {
-      console.log(`📝 Setting search query from URL: "${initialQuery}"`);
+    // Set state directly from props
+    setCurrentPage(initialPage);
+    if (initialQuery !== undefined) {
       setSearchQuery(initialQuery);
     }
     
-    // Update page from URL
-    if (initialPage !== currentPage) {
-      console.log(`📄 Setting page from URL: ${initialPage}`);
-      setCurrentPage(initialPage);
-    }
-    
-    // Clear previous results when props change
+    // Clear previous results 
     setVideos([]);
     setHasNextPage(true);
     lastFetchedParams.current = null;
     
-    // Fetch data with new params
+    // Fetch data immediately with the props
+    console.log(`🚀 Fetching data for page ${initialPage}, query: "${initialQuery}"`);
     fetchVideos(initialPage, initialQuery);
     
     initialized.current = true;
-  }, [initialPage, initialQuery, currentPage, searchQuery, setSearchQuery, fetchVideos]);
+  }, [initialPage, initialQuery, setSearchQuery, fetchVideos]);
 
   // Handle pagination button clicks (update URL, which will trigger re-render)
   const handleNextPage = () => {

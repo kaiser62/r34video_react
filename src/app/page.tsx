@@ -10,10 +10,15 @@ export default async function Home({ searchParams }: HomeProps) {
   const page = typeof params.page === 'string' ? parseInt(params.page, 10) : 1;
   const query = typeof params.q === 'string' ? params.q : undefined;
 
+  console.log('🏠 Page component rendered with:', { page, query, params });
+
+  // Create a unique key to force Feed re-render when URL changes
+  const feedKey = `${query || 'home'}-${page}`;
+
   return (
     <main>
       <Suspense fallback={<div>Loading...</div>}>
-        <Feed initialPage={page} initialQuery={query} />
+        <Feed key={feedKey} initialPage={page} initialQuery={query} />
       </Suspense>
     </main>
   );
